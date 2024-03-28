@@ -103,25 +103,29 @@ filters <- c(8, 16, 32)
 kernel_size <- c(3, 5, 7)
 leaky_relu <- c(T, F)
 batch_normalization <- c(T, F)
+batch_size <- c(500, 1000, 1500)
 
 # expand the grid so that every possible combination of the above parameters is present. 
 # creating every possible combination to test
 grid.search.full<-expand.grid(filters = filters, kernel_size = kernel_size, 
                               leaky_relu = leaky_relu, 
-                              batch_normalization = batch_normalization)
+                              batch_normalization = batch_normalization,
+                              batch_size = batch_size)
 
 set.seed(15)
 # x<-sample(1:45,20,replace=F) # 45 = size of grid search (num of row)
-x<-sample(1:nrow(grid.search.full),20,replace=F)
+x<-sample(1:nrow(grid.search.full),nrow(grid.search.full),replace=F)
 grid.search.subset<-grid.search.full[x,]
 
-### need to change the grid and implement in for loop
-
-val_loss<-matrix(nrow=20,ncol=5)
-best_epoch<-matrix(nrow=20,ncol=5)
 
 
-for (i in 1:20){
+val_loss<-matrix(nrow=nrow(grid.search.full),ncol=5)
+best_epoch_loss<-matrix(nrow=nrow(grid.search.full),ncol=5)
+val_auc<-matrix(nrow=nrow(grid.search.full),ncol=5)
+best_epoch_auc<-matrix(nrow=nrow(grid.search.full),ncol=5)
+
+
+for (i in 1:nrow(grid.search.full)){
   for (fold in 1:5){
     x_train_set <- x_train[train_folds[[fold]],]
     y_train_set <- dummy_y_train[train_folds[[fold]],]
@@ -212,13 +216,15 @@ for (i in 1:20){
     # Fit model (just resnet)
     resnet_history <- model %>% fit(
       x_train_set, y_train_set,
-      batch_size = 1000,
+      batch_size = grid.search.subset$batch_size[i],
       epochs = 75,
       validation_data = list(x_val_set, y_val_set)
     )
     
     val_loss[i,fold]<-min(resnet_history$metrics$val_loss)
-    best_epoch[i,fold]<-which(resnet_history$metrics$val_loss==min(resnet_history$metrics$val_loss))
+    best_epoch_loss[i,fold]<-which(resnet_history$metrics$val_loss==min(resnet_history$metrics$val_loss))
+    #val_auc[i,fold] <- max(resnet_history$metrics$val_auc)
+    #best_epoch_auc[i,fold]<-which(resnet_history$metrics$val_auc==max(resnet_history$metrics$val_auc))
     
     print(i)
     print(fold)
@@ -228,6 +234,43 @@ for (i in 1:20){
 
 print(val_loss)
 print(best_epoch)
+
+## find best parameters ##
+
+# Using validation loss
+
+# find the lowest validation loss (will not be used if using AUC)
+which(val_loss==min(val_loss),arr.ind = T)
+lowest_val_loss=which(val_loss==min(val_loss),arr.ind = T) # name so can call on it later
+# val_loss[5,4]
+# best_epoch[5,4]
+# the overall lowest validation loss was 0.418, but it occurred in epoch 29/30, i.e. the model could have improved more.
+
+val_loss[lowest_val_loss] # index must be what was outputted from prev line that finds the lowest val loss
+best_epoch_loss[lowest_val_loss]
+
+# find best mean val loss
+which(rowMeans(val_loss)==min(rowMeans(val_loss)))
+best_mean_val_loss=which(rowMeans(val_loss)==min(rowMeans(val_loss)))
+mean(val_loss[best_mean_val_loss[1],])
+mean(best_epoch_loss[best_mean_val_loss[1],])
+val_loss[best_mean_val_loss]      
+best_epoch_loss[best_mean_val_loss]
+
+print(grid.search.subset)
+# Using validation AUC
+
+# find highest validation AUC
+#highest_val_auc=which(val_auc==max(val_auc),arr.ind = T) # name so can call on it later
+#val_auc[highest_val_auc] # index must be what was outputted from prev line that finds the lowest val loss
+#best_epoch_auc[highest_val_auc]
+
+# find best mean val auc
+#best_mean_val_auc=which(rowMeans(val_auc)==max(rowMeans(val_auc)))
+#mean(val_auc[best_mean_val_auc[1],])
+#mean(best_epoch_auc[best_mean_val_auc[1],])
+#val_auc[best_mean_val_auc]      
+#best_epoch_auc[best_mean_val_auc]
 
 fold = 1
 fold_index <- which(train$folds == fold)
