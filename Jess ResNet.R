@@ -103,7 +103,7 @@ filters <- c(8, 16, 32)
 kernel_size <- c(3, 5, 7)
 leaky_relu <- c(T, F)
 batch_normalization <- c(T, F)
-batch_size <- c(500, 1000, 1500)
+batch_size <- c(800, 1000, 1200)
 
 # expand the grid so that every possible combination of the above parameters is present. 
 # creating every possible combination to test
@@ -127,11 +127,11 @@ best_epoch_auc<-matrix(nrow=nrow(grid.search.full),ncol=5)
 
 for (i in 1:nrow(grid.search.full)){
   for (fold in 1:5){
-    x_train_set <- x_train[train_folds[[fold]],]
-    y_train_set <- dummy_y_train[train_folds[[fold]],]
+    x_train_set <- x_train[-train_folds[[fold]],]
+    y_train_set <- dummy_y_train[-train_folds[[fold]],]
     
-    x_val_set<-x_train[-train_folds[[fold]],]
-    y_val_set<-dummy_y_train[-train_folds[[fold]],]
+    x_val_set<-x_train[train_folds[[fold]],]
+    y_val_set<-dummy_y_train[train_folds[[fold]],]
     
     input_shape <- c(249,1)
     set_random_seed(15)
