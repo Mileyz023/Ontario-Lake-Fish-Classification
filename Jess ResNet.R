@@ -27,15 +27,15 @@ processed_data <- processed_data %>% filter(is.na(aspectAngle) == F & is.na(Angl
 processed_data <- processed_data %>% filter(F100 > -1000)
 
 set.seed(73)
-split <- group_initial_split(processed_data, group = fishNum, strata = species, prop = 0.9)
+split <- group_initial_split(processed_data, group = fishNum, strata = species, prop = 0.8)
 train <- training(split)
 test <- testing(split)
 
 train%>%group_by(species)%>%count()
 test%>%group_by(species)%>%count()
 
-train <- slice_sample(train, n = 8533, by = species)
-test <- slice_sample(test, n = 601, by = species)
+train <- slice_sample(train, n = 7272, by = species)
+test <- slice_sample(test, n = 1862, by = species)
 
 train%>%group_by(species)%>%count()
 test%>%group_by(species)%>%count()
@@ -102,7 +102,7 @@ add_batch_normalization <- function(input_layer, batch_normalization) {
 filters <- c(8, 16, 32)
 kernel_size <- c(3, 5, 7)
 leaky_relu <- c(T, F)
-batch_normalization <- c(T, F)
+batch_normalization <- c(F)
 batch_size <- c(800, 1000, 1200)
 
 # expand the grid so that every possible combination of the above parameters is present. 
@@ -272,18 +272,26 @@ print(grid.search.subset)
 #val_auc[best_mean_val_auc]      
 #best_epoch_auc[best_mean_val_auc]
 
-fold = 1
-fold_index <- which(train$folds == fold)
-x_train_set <- x_train[-fold_index,]
-y_train_set <- dummy_y_train[-fold_index,]
 
-x_val_set <- x_train[fold_index,]
-y_val_set <- dummy_y_train[fold_index,]
+
+
+
+
+
+
+set.seed(250)
+test_folds <- groupKFold(test$fishNum,k=5)
+fold = 1
+x_test_set <- x_test[-test_folds[[fold]],]
+y_test_set <- dummy_y_test[-test_folds[[fold]],]
+
+x_val_set<-x_test[test_folds[[fold]],]
+y_val_set<-dummy_y_test[test_folds[[fold]],]
 
 # run up to here
 
 # below need to be extracted and inputted as values so only need to change this line everytime we have new optimal values
-best_param=tibble(filters = 16, kernel_size = 3, leaky_relu = T, batch_normalization = T)
+best_param=tibble(filters = 16, kernel_size = 5, leaky_relu = T, batch_normalization = F, batch_size = 1000)
 
 ### NEED TO add a function with if else structure for adding conditional layers for leaky and bn
 
@@ -370,7 +378,7 @@ model %>% compile(
 # Fit model (just resnet)
 resnet_history <- model %>% fit(
   x_train_set, y_train_set,
-  batch_size = 1000,
+  batch_size = best_param$batch_size,
   epochs = 75,
   validation_data = list(x_val_set, y_val_set)
 )
