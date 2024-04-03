@@ -210,7 +210,7 @@ for (i in 1:nrow(grid.search.full)){
     model %>% compile(
       optimizer = optimizer_adam(),
       loss = loss_categorical_crossentropy,
-      metrics = c("accuracy")
+      metrics = c("accuracy", tf$keras$metrics$AUC())
     )
     
     # Fit model (just resnet)
@@ -223,8 +223,8 @@ for (i in 1:nrow(grid.search.full)){
     
     val_loss[i,fold]<-min(resnet_history$metrics$val_loss)
     best_epoch_loss[i,fold]<-which(resnet_history$metrics$val_loss==min(resnet_history$metrics$val_loss))
-    #val_auc[i,fold] <- max(resnet_history$metrics$val_auc)
-    #best_epoch_auc[i,fold]<-which(resnet_history$metrics$val_auc==max(resnet_history$metrics$val_auc))
+    val_auc[i,fold] <- max(resnet_history$metrics$val_auc)
+    best_epoch_auc[i,fold]<-which(resnet_history$metrics$val_auc==max(resnet_history$metrics$val_auc))
     
     print(i)
     print(fold)
@@ -261,16 +261,16 @@ print(grid.search.subset)
 # Using validation AUC
 
 # find highest validation AUC
-#highest_val_auc=which(val_auc==max(val_auc),arr.ind = T) # name so can call on it later
-#val_auc[highest_val_auc] # index must be what was outputted from prev line that finds the lowest val loss
-#best_epoch_auc[highest_val_auc]
+highest_val_auc=which(val_auc==max(val_auc),arr.ind = T) # name so can call on it later
+val_auc[highest_val_auc] # index must be what was outputted from prev line that finds the lowest val loss
+best_epoch_auc[highest_val_auc]
 
 # find best mean val auc
-#best_mean_val_auc=which(rowMeans(val_auc)==max(rowMeans(val_auc)))
-#mean(val_auc[best_mean_val_auc[1],])
-#mean(best_epoch_auc[best_mean_val_auc[1],])
-#val_auc[best_mean_val_auc]      
-#best_epoch_auc[best_mean_val_auc]
+best_mean_val_auc=which(rowMeans(val_auc)==max(rowMeans(val_auc)))
+mean(val_auc[best_mean_val_auc[1],])
+mean(best_epoch_auc[best_mean_val_auc[1],])
+val_auc[best_mean_val_auc]      
+best_epoch_auc[best_mean_val_auc]
 
 
 
@@ -281,19 +281,19 @@ print(grid.search.subset)
 
 set.seed(250)
 test_folds <- groupKFold(test$fishNum,k=5)
-fold = 1
+fold = 2
 x_test_set <- x_test[-test_folds[[fold]],]
 y_test_set <- dummy_y_test[-test_folds[[fold]],]
 
 x_val_set<-x_test[test_folds[[fold]],]
 y_val_set<-dummy_y_test[test_folds[[fold]],]
 
-# run up to here
+
 
 # below need to be extracted and inputted as values so only need to change this line everytime we have new optimal values
-best_param=tibble(filters = 32, kernel_size = 3, leaky_relu = F, batch_normalization = F, batch_size = 1000)
+best_param=tibble(filters = 8, kernel_size = 7, leaky_relu = T, batch_normalization = F, batch_size = 1000)
 
-### NEED TO add a function with if else structure for adding conditional layers for leaky and bn
+
 
 input_shape <- c(249,1)
 set_random_seed(15)
@@ -372,7 +372,7 @@ model <- keras_model(inputs, outputs)
 model %>% compile(
   optimizer = optimizer_adam(),
   loss = loss_categorical_crossentropy,
-  metrics = c("accuracy")
+  metrics = c("accuracy", tf$keras$metrics$AUC())
 )
 
 # Fit model (just resnet)
