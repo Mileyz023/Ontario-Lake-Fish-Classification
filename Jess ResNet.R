@@ -103,7 +103,7 @@ filters <- c(8, 16, 32)
 kernel_size <- c(3, 5, 7)
 leaky_relu <- c(T, F)
 batch_normalization <- c(F)
-batch_size <- c(800, 1000, 1200)
+batch_size <- c(1000)
 
 # expand the grid so that every possible combination of the above parameters is present. 
 # creating every possible combination to test
@@ -233,7 +233,7 @@ for (i in 1:nrow(grid.search.full)){
 }
 
 print(val_loss)
-print(best_epoch)
+print(best_epoch_loss)
 
 ## find best parameters ##
 
@@ -291,7 +291,7 @@ y_val_set<-dummy_y_test[test_folds[[fold]],]
 # run up to here
 
 # below need to be extracted and inputted as values so only need to change this line everytime we have new optimal values
-best_param=tibble(filters = 16, kernel_size = 5, leaky_relu = T, batch_normalization = F, batch_size = 1000)
+best_param=tibble(filters = 32, kernel_size = 3, leaky_relu = F, batch_normalization = F, batch_size = 1000)
 
 ### NEED TO add a function with if else structure for adding conditional layers for leaky and bn
 
