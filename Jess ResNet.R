@@ -26,16 +26,16 @@ processed_data$species <- ifelse(processed_data$spCode == 81, "LT", "SMB")
 processed_data <- processed_data %>% filter(is.na(aspectAngle) == F & is.na(Angle_major_axis) == F & is.na(Angle_minor_axis) == F)
 processed_data <- processed_data %>% filter(F100 > -1000)
 
-set.seed(73)
-split <- group_initial_split(processed_data, group = fishNum, strata = species, prop = 0.8)
+set.seed(7)
+split <- group_initial_split(processed_data, group = fishNum, strata = species, prop = 0.9)
 train <- training(split)
 test <- testing(split)
 
 train%>%group_by(species)%>%count()
 test%>%group_by(species)%>%count()
 
-train <- slice_sample(train, n = 7272, by = species)
-test <- slice_sample(test, n = 1862, by = species)
+train <- slice_sample(train, n = 8172, by = species)
+test <- slice_sample(test, n = 962, by = species)
 
 train%>%group_by(species)%>%count()
 test%>%group_by(species)%>%count()
@@ -99,7 +99,7 @@ add_batch_normalization <- function(input_layer, batch_normalization) {
 
 
 # create grid of parameter space we want to search
-filters <- c(8, 16, 32)
+filters <- c(16, 32, 64)
 kernel_size <- c(3, 5, 7)
 leaky_relu <- c(T, F)
 batch_normalization <- c(F)
@@ -127,11 +127,13 @@ best_epoch_auc<-matrix(nrow=nrow(grid.search.full),ncol=5)
 
 for (i in 1:nrow(grid.search.full)){
   for (fold in 1:5){
-    x_train_set <- x_train[-train_folds[[fold]],]
-    y_train_set <- dummy_y_train[-train_folds[[fold]],]
+    print(grid.search.subset[i,])
+    print(fold)
+    x_train_set <- x_train[train_folds[[fold]],]
+    y_train_set <- dummy_y_train[train_folds[[fold]],]
     
-    x_val_set<-x_train[train_folds[[fold]],]
-    y_val_set<-dummy_y_train[train_folds[[fold]],]
+    x_val_set<-x_train[-train_folds[[fold]],]
+    y_val_set<-dummy_y_train[-train_folds[[fold]],]
     
     input_shape <- c(249,1)
     set_random_seed(15)
@@ -236,17 +238,16 @@ print(val_loss)
 print(best_epoch_loss)
 
 ## find best parameters ##
+print(grid.search.subset)
 
 # Using validation loss
 
 # find the lowest validation loss (will not be used if using AUC)
 which(val_loss==min(val_loss),arr.ind = T)
-lowest_val_loss=which(val_loss==min(val_loss),arr.ind = T) # name so can call on it later
-# val_loss[5,4]
-# best_epoch[5,4]
-# the overall lowest validation loss was 0.418, but it occurred in epoch 29/30, i.e. the model could have improved more.
+lowest_val_loss=which(val_loss==min(val_loss),arr.ind = T)
 
-val_loss[lowest_val_loss] # index must be what was outputted from prev line that finds the lowest val loss
+
+val_loss[lowest_val_loss]
 best_epoch_loss[lowest_val_loss]
 
 # find best mean val loss
@@ -257,7 +258,6 @@ mean(best_epoch_loss[best_mean_val_loss[1],])
 val_loss[best_mean_val_loss]      
 best_epoch_loss[best_mean_val_loss]
 
-print(grid.search.subset)
 # Using validation AUC
 
 # find highest validation AUC
@@ -272,27 +272,26 @@ mean(best_epoch_auc[best_mean_val_auc[1],])
 val_auc[best_mean_val_auc]      
 best_epoch_auc[best_mean_val_auc]
 
+print(val_auc)
 
 
 
 
 
 
+fold = 1
+x_train_set <- x_train[-train_folds[[fold]],]
+y_train_set <- dummy_y_train[-train_folds[[fold]],]
 
-set.seed(250)
-test_folds <- groupKFold(test$fishNum,k=5)
-fold = 2
-x_test_set <- x_test[-test_folds[[fold]],]
-y_test_set <- dummy_y_test[-test_folds[[fold]],]
-
-x_val_set<-x_test[test_folds[[fold]],]
-y_val_set<-dummy_y_test[test_folds[[fold]],]
+x_val_set<-x_train[train_folds[[fold]],]
+y_val_set<-dummy_y_train[train_folds[[fold]],]
 
 
 
 # below need to be extracted and inputted as values so only need to change this line everytime we have new optimal values
-best_param=tibble(filters = 8, kernel_size = 7, leaky_relu = T, batch_normalization = F, batch_size = 1000)
-
+best_param=tibble(filters = 32, kernel_size = 7, leaky_relu = F, batch_normalization = F, batch_size = 1000)
+# best loss: 32, 7, t/f, f, 1000
+# best auc: 64, 7, f, f, 1000
 
 
 input_shape <- c(249,1)
@@ -366,8 +365,7 @@ outputs <- block_5_output %>%
   layer_dense(2, activation="sigmoid")
 
 model <- keras_model(inputs, outputs)
-#model
-#plot(model,show_shapes = T)
+
 
 model %>% compile(
   optimizer = optimizer_adam(),
@@ -379,13 +377,13 @@ model %>% compile(
 resnet_history <- model %>% fit(
   x_train_set, y_train_set,
   batch_size = best_param$batch_size,
-  epochs = 75,
+  epochs = 19,
   validation_data = list(x_val_set, y_val_set)
 )
 
-
-
 plot(resnet_history)
+
+
 evaluate(model, (x_test), dummy_y_test)
 preds<-predict(model, x=x_test)
 
