@@ -57,17 +57,17 @@ dummy_y_test <- to_categorical(test$y, num_classes = 2)
 
 
 x_train <- train %>% select(52:300)
-x_train<-x_train+10*log10(450/train$totalLength)
-x_train<-exp(x_train/10)
-x_train<-x_train%>%scale()
+#x_train<-x_train+10*log10(450/train$totalLength)
+#x_train<-exp(x_train/10)
+#x_train<-x_train%>%scale()
 x_train<-as.matrix(x_train)
 
-xmean<-attributes(x_train)$`scaled:center`
-xsd<-attributes(x_train)$`scaled:scale`
+#xmean<-attributes(x_train)$`scaled:center`
+#xsd<-attributes(x_train)$`scaled:scale`
 x_test <- test %>% select(52:300)
-x_test<-x_test+10*log10(450/test$totalLength)
-x_test<-exp(x_test/10)
-x_test<-x_test%>%scale(xmean,xsd)
+#x_test<-x_test+10*log10(450/test$totalLength)
+#x_test<-exp(x_test/10)
+#x_test<-x_test%>%scale(xmean,xsd)
 x_test<-as.matrix(x_test)
 
 # functions for adding layers conditionally
@@ -128,12 +128,18 @@ best_epoch_auc<-matrix(nrow=nrow(grid.search.full),ncol=5)
 for (i in 1:nrow(grid.search.full)){
   for (fold in 1:5){
     print(grid.search.subset[i,])
-    print(fold)
-    x_train_set <- x_train[train_folds[[fold]],]
-    y_train_set <- dummy_y_train[train_folds[[fold]],]
+    print(sprintf("Processing Fold #%d", fold))
     
-    x_val_set<-x_train[-train_folds[[fold]],]
-    y_val_set<-dummy_y_train[-train_folds[[fold]],]
+    x_train_set <- x_train[-train_folds[[fold]],]
+    y_train_set <- dummy_y_train[-train_folds[[fold]],]
+    
+    x_val_set<-x_train[train_folds[[fold]],]
+    y_val_set<-dummy_y_train[train_folds[[fold]],]
+    
+    # Scaling within the loop
+    scaler <- preProcess(x_train_set, method = 'scale')
+    x_train_set <- predict(scaler, x_train_set)
+    x_val_set <- predict(scaler, x_val_set)
     
     input_shape <- c(249,1)
     set_random_seed(15)
@@ -286,6 +292,11 @@ y_train_set <- dummy_y_train[-train_folds[[fold]],]
 x_val_set<-x_train[train_folds[[fold]],]
 y_val_set<-dummy_y_train[train_folds[[fold]],]
 
+# Scaling
+scaler <- preProcess(x_train_set, method = 'scale')
+x_train_set <- predict(scaler, x_train_set)
+x_val_set <- predict(scaler, x_val_set)
+
 
 
 # below need to be extracted and inputted as values so only need to change this line everytime we have new optimal values
@@ -377,7 +388,7 @@ model %>% compile(
 resnet_history <- model %>% fit(
   x_train_set, y_train_set,
   batch_size = best_param$batch_size,
-  epochs = 19,
+  epochs = 100,
   validation_data = list(x_val_set, y_val_set)
 )
 

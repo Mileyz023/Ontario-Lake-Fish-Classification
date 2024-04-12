@@ -118,7 +118,7 @@ model %>% compile(
 resnet_history <- model %>% fit(
   x_train,dummy_y_train,
   batch_size = 1000,
-  epochs = 26,
+  epochs = 100,
   validation_data = list(x_validate, dummy_y_val)
 )
 plot(resnet_history)
