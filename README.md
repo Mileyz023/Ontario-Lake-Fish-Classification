@@ -2,7 +2,8 @@
 
 Binary classification for Lake Trout and Lake White Fish from hydroacoustic data.
 
-Three methods are involved:
-* 1D-CNN
-* RNN
-* Residual Neural Network
+From sonar to species: using wideband acoustics and machine learning to classify fish species
+
+## Abstract
+
+Canada’s recreational fishery contributed $7.9 billion to the national economy in 2015, and in Ontario alone freshwater recreational and commercial fisheries represent a $2.2 billion industry. To maintain sustainable and resilient fisheries, managers must have accurate information on the current status of stock health, population-size, and fish communities for many water bodies at a given time. Generally, this information is gathered through resource-intensive and lethal sampling methods. Current hydroacoustic methods can assess individual fish sizes but species identities cannot be discerned. The recent development of wideband acoustic transducers which emit a wide range of frequencies in a single ping may allow more information on body form to be extracted and thus may aid in species identification. In this study, we created a labelled dataset of acoustic responses of two fish species by tethering individual fish under a transducer emitting 249 frequencies between 45kHz and 170kHz. We then applied three different bespoke machine learning algorithms (deep, recurrent, and residual neural networks) to acoustic backscatter measures at each frequency and tested their ability to correctly classify the two fish species. We found that on unseen data all three methods had over 85% balanced classification accuracy. Further, extracting SHAP values for the deep neural network showed that there is not a single range of frequencies that are important for distinguishing the species, but rather the most important frequencies are distributed across the range of frequencies used. Eventually, these algorithms can be integrated into current abundance or biomass models and allow users to propagate classification uncertainty into these models. Overall, the use of wideband acoustics in conjunction with machine learning techniques offers the potential to drastically reduce the resources needed and costs associated with monitoring fish stocks.
